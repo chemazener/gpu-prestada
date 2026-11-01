@@ -1,0 +1,4 @@
+# El programa y el contenido solo se sirven a través de index.php / descargar.php (con login).
+<FilesMatch "\.(exe|json|new)$|^contenido\.php$|^gpu-prestada-linux-">
+    Require all denied
+</FilesMatch>

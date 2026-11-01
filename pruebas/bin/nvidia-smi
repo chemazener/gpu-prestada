@@ -1,0 +1,61 @@
+#!/bin/sh
+# nvidia-smi de mentira para probar el agente en una máquina sin GPU (procesos como en Windows)
+# FAKE_SMI=tabla → «-q -d PIDS» falla y el tipo sale de la tabla; FAKE_SMI=xml → solo el XML da el tipo
+case "$FAKE_SMI:$*" in
+  tabla:-q\ -d*|xml:-q\ -d*) exit 9 ;;
+  xml:) exit 9 ;;
+  *:-q\ -d\ PIDS) printf '%s\r\n' "==============NVSMI LOG==============" "" "GPU 00000000:01:00.0" "    Processes" \
+      "        GPU instance ID                   : N/A" "        Process ID                        : 5740" \
+      "            Type                          : C+G" "            Name                          : C:\\Windows\\explorer.exe" \
+      "            Used GPU Memory               : Not available in WDDM driver model" \
+      "        Process ID                        : 4242" "            Type                          : C" \
+      "            Name                          : C:\\ollama\\ollama.exe" "            Used GPU Memory               : 3120 MiB" \
+      "        Process ID                        : 21748" "            Type                          : C+G" ;;
+  *:) printf '%s\r\n' "+-----------------------------------------------------------------------------------------+" \
+      "| Processes:                                                                              |" \
+      "|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |" \
+      "|    0   N/A  N/A            5740    C+G   C:\\Windows\\explorer.exe                N/A      |" \
+      "|    0   N/A  N/A            4242      C   ...\\ollama\\ollama.exe                3120MiB  |" \
+      "|    0   N/A  N/A           21748    C+G   ...ktop\\Telegram.exe                  N/A      |" ;;
+  *-x*) cat <<'XML'
+<?xml version="1.0" ?>
+<!DOCTYPE nvidia_smi_log SYSTEM "nvsmi_device_v12.dtd">
+<nvidia_smi_log>
+	<driver_version>581.57</driver_version>
+	<gpu id="00000000:01:00.0">
+		<processes>
+			<process_info>
+				<gpu_instance_id>N/A</gpu_instance_id>
+				<compute_instance_id>N/A</compute_instance_id>
+				<pid>5740</pid>
+				<type>C+G</type>
+				<process_name>C:\Windows\explorer.exe</process_name>
+				<used_memory>N/A</used_memory>
+			</process_info>
+			<process_info>
+				<gpu_instance_id>N/A</gpu_instance_id>
+				<compute_instance_id>N/A</compute_instance_id>
+				<pid>4242</pid>
+				<type>C</type>
+				<process_name>C:\Users\prueba\AppData\Local\Programs\Ollama\lib\ollama\ollama.exe</process_name>
+				<used_memory>3120 MiB</used_memory>
+			</process_info>
+			<process_info>
+				<gpu_instance_id>N/A</gpu_instance_id>
+				<compute_instance_id>N/A</compute_instance_id>
+				<pid>21748</pid>
+				<type>C+G</type>
+				<process_name>C:\Users\prueba\AppData\Roaming\Telegram Desktop\Telegram.exe</process_name>
+				<used_memory>N/A</used_memory>
+			</process_info>
+		</processes>
+	</gpu>
+</nvidia_smi_log>
+XML
+  ;;
+  xml:*query-compute-apps*) exit 9 ;;
+  *query-compute-apps*) echo "5740, C:\\Windows\\explorer.exe, [N/A]"
+                        echo "4242, C:\\Users\\prueba\\AppData\\Local\\Programs\\Ollama\\lib\\ollama\\ollama.exe, 3120"
+                        echo "21748, C:\\Users\\prueba\\AppData\\Roaming\\Telegram Desktop\\Telegram.exe, [N/A]" ;;
+  *) echo "NVIDIA GeForce RTX Prueba, 12288, 1024, 3, 45, 60.0, 200.0, 30" ;;
+esac

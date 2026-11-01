@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Qué modelo de IA local elegir para una RTX 3080 — Lomastrend</title>
+<meta name="description" content="Comparativa medida en casa de cinco modelos de IA local en una RTX 3080 de 10 GB: Gemma 4 12B, Bonsai 2 27B, Saluki 27B, Bonsai 27B y gpt-oss-20B con FreeToken. Velocidad, memoria, llamadas a herramientas, extracción de datos y razonamiento.">
+<link rel="stylesheet" href="/proyectos/proyecto.css">
+<style>
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:1.6rem 0}
+  .metric{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:1rem 1.1rem}
+  .metric .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--faint)}
+  .metric .v{font-size:1.8rem;font-weight:800;margin:.15rem 0 0;line-height:1.1}
+  .metric .v small{font-size:.9rem;font-weight:600;color:var(--dim)}
+  .metric .s{font-size:.82rem;color:var(--dim);margin-top:.2rem}
+  .win{color:var(--green)}
+  .chart{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:1.2rem 1.3rem;margin:1.3rem 0}
+  .chart h3{margin:.1rem 0 .2rem;padding:0}
+  .chart .hint{font-size:.82rem;color:var(--faint);margin:0 0 .8rem}
+  .legend{display:flex;gap:1.2rem;flex-wrap:wrap;font-size:.82rem;color:var(--dim);margin-top:.6rem}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:.4rem;vertical-align:middle}
+  table.spec{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.92rem}
+  table.spec td{border-bottom:1px solid var(--bd);padding:.55rem .3rem;color:#cdd7e6}
+  table.spec td:first-child{color:var(--dim);width:42%}
+  .tw{overflow-x:auto;margin:1.2rem 0;border:1px solid var(--bd);border-radius:14px;background:var(--card)}
+  table.cmp{width:100%;min-width:640px;border-collapse:collapse;font-size:.9rem}
+  table.cmp th,table.cmp td{padding:.6rem .7rem;border-bottom:1px solid var(--bd);text-align:left;vertical-align:top;color:#cdd7e6}
+  table.cmp thead th{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);white-space:nowrap}
+  table.cmp tbody th{color:var(--dim);font-weight:600;width:24%}
+  table.cmp tr:last-child th,table.cmp tr:last-child td{border-bottom:0}
+  table.cmp .ok{color:var(--green);font-weight:700} table.cmp .no{color:#fca5a5;font-weight:700}
+  table.cmp td small{display:block;color:var(--faint);font-size:.8rem}
+  @media(max-width:640px){.metrics{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="/#portfolio">&larr; Volver al portfolio</a>
+
+  <header class="hero">
+    <div class="eyebrow">Banco de pruebas · IA local</div>
+    <h1>Qué modelo de IA local elegir para una RTX 3080</h1>
+    <p class="lead">Cinco modelos, la <strong>misma tarjeta de 10 GB</strong> y las <strong>mismas seis peticiones</strong> a cada uno. El resultado no es el esperado: un modelo clásico de 12.000 millones de parámetros <strong>empata en velocidad</strong> con el mejor de los nuevos de 27.000 millones comprimidos a 2 bits, y el más comentado de estos últimos es el más lento y el que más memoria gasta.</p>
+    <div class="tags">
+      <span class="tag">RTX 3080 (10 GB)</span><span class="tag">Gemma 4 12B</span><span class="tag">Bonsai 2 27B</span><span class="tag">Saluki 27B</span>
+      <span class="tag">gpt-oss-20B</span><span class="tag">llama.cpp</span><span class="tag">FreeToken</span><span class="tag">Medido en casa</span>
+    </div>
+  </header>
+
+  <div class="metrics">
+    <div class="metric"><div class="k">Los más rápidos</div><div class="v win">77<small> tok/s</small></div><div class="s">Bonsai 2 y Gemma 4 12B</div></div>
+    <div class="metric"><div class="k">Menos memoria</div><div class="v win">7,0<small> GB</small></div><div class="s">Bonsai 2, con 27B</div></div>
+    <div class="metric"><div class="k">Sin fallos</div><div class="v">3<small> de 5</small></div><div class="s">en herramientas, datos y razonamiento</div></div>
+    <div class="metric"><div class="k">Fiables de cara al público</div><div class="v">0<small> de 5</small></div><div class="s">sin darles los datos reales</div></div>
+  </div>
+
+  <section>
+    <h2>El problema</h2>
+    <p>Una <strong>RTX 3080 tiene 10 GB de memoria</strong>, y eso decide casi todo. Un modelo de lenguaje solo va rápido si cabe entero en la tarjeta, junto con el espacio que necesita para recordar la conversación (el <em>contexto</em>). Lo que no cabe se ejecuta en el procesador, mucho más despacio.</p>
+    <p>Hasta hace poco, eso dejaba el techo en modelos de unos 12.000 millones de parámetros. En los últimos meses han aparecido dos caminos para saltárselo:</p>
+    <ul>
+      <li><strong>Comprimir más.</strong> Modelos de 27.000 millones de parámetros reducidos a unos 2 bits por peso: pasan de 54 GB a entre 6 y 8 GB y entran enteros en la tarjeta.</li>
+      <li><strong>Cambiar el motor.</strong> Dejar el modelo en la memoria del sistema y llevar a la tarjeta solo las partes que hacen falta en cada momento.</li>
+    </ul>
+    <div class="callout">La pregunta: con 10 GB, ¿compensa un modelo grande muy comprimido frente a uno mediano bien hecho? ¿Y cuál de todos conviene para cada tarea?</div>
+  </section>
+
+  <section>
+    <h2>Los cinco candidatos</h2>
+    <div class="tw">
+      <table class="cmp">
+        <thead><tr><th></th><th>Qué es</th><th>Tamaño</th><th>Motor</th></tr></thead>
+        <tbody>
+          <tr><th>Gemma 4 12B</th><td>12.000 millones de parámetros, cuantización clásica de 4 bits<small>el modelo «de siempre» para esta tarjeta</small></td><td>6,7 GB</td><td>llama.cpp</td></tr>
+          <tr><th>Bonsai 2 27B</th><td>Qwen3.8-27B con pesos ternarios, unos 1,75 bits por peso</td><td>5,95 GB</td><td>llama.cpp<small>versión de PrismML</small></td></tr>
+          <tr><th>Saluki 27B</th><td>Qwen3.8-27B a unos 2 bits, afinado para llamar a herramientas</td><td>7,9 GB</td><td>llama.cpp</td></tr>
+          <tr><th>Bonsai 27B</th><td>La generación anterior de Bonsai, sobre Qwen3.6-27B</td><td>7,2 GB</td><td>llama.cpp<small>versión de PrismML</small></td></tr>
+          <tr><th>gpt-oss-20B</th><td>20.000 millones de parámetros, de tipo «mezcla de expertos»<small>no cabe en la tarjeta</small></td><td>~13 GB</td><td>FreeToken</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>La prueba</h2>
+    <p>A cada modelo, en solitario y con la tarjeta para él solo, las mismas seis peticiones:</p>
+    <ul>
+      <li><strong>Un texto largo</strong> en español, para medir la velocidad.</li>
+      <li><strong>Atención al cliente:</strong> un huésped que llega con la recepción cerrada y pide factura de empresa.</li>
+      <li><strong>Dos herramientas en una frase:</strong> consultar disponibilidad y, de paso, enviar un mensaje.</li>
+      <li><strong>Un problema de razonamiento</strong> con porcentajes y redondeos.</li>
+      <li><strong>Una factura a JSON:</strong> proveedor, CIF, fecha, base, IVA y total.</li>
+      <li>Y un saludo corto de calentamiento.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Velocidad y memoria</h2>
+
+    <div class="chart">
+      <h3>Velocidad de generación <span class="hint">(tokens/s en el texto largo · más es mejor)</span></h3>
+      <svg viewBox="0 0 600 250" width="100%" role="img" aria-label="Velocidad de generación: Bonsai 2 y Gemma 4 12B 77 tokens por segundo, gpt-oss-20B con FreeToken 64, Bonsai 27B 56 y Saluki 27B 43">
+          <line x1="190" y1="14" x2="190" y2="219" stroke="#22304a" stroke-width="1"/>
+          <text x="180" y="39" text-anchor="end" fill="#e5eef7" font-size="14" font-weight="700">Bonsai 2 27B</text>
+          <rect x="190" y="22" width="377" height="24" rx="4" fill="#38bdf8"><title>Bonsai 2 27B: 77,3 tokens/s</title></rect>
+          <text x="575" y="39" fill="#e5eef7" font-size="14" font-weight="800">77</text>
+          <text x="180" y="79" text-anchor="end" fill="#e5eef7" font-size="14" font-weight="700">Gemma 4 12B</text>
+          <rect x="190" y="62" width="373" height="24" rx="4" fill="#38bdf8"><title>Gemma 4 12B: 76,5 tokens/s</title></rect>
+          <text x="571" y="79" fill="#e5eef7" font-size="14" font-weight="800">77</text>
+          <text x="180" y="119" text-anchor="end" fill="#e5eef7" font-size="14" font-weight="700">gpt-oss-20B · FreeToken</text>
+          <rect x="190" y="102" width="310" height="24" rx="4" fill="#38bdf8"><title>gpt-oss-20B con FreeToken: 63,6 tokens/s de extremo a extremo</title></rect>
+          <text x="508" y="119" fill="#e5eef7" font-size="14" font-weight="800">64*</text>
+          <text x="180" y="159" text-anchor="end" fill="#e5eef7" font-size="14" font-weight="700">Bonsai 27B</text>
+          <rect x="190" y="142" width="274" height="24" rx="4" fill="#38bdf8"><title>Bonsai 27B: 56,3 tokens/s</title></rect>
+          <text x="472" y="159" fill="#e5eef7" font-size="14" font-weight="800">56</text>
+          <text x="180" y="199" text-anchor="end" fill="#e5eef7" font-size="14" font-weight="700">Saluki 27B</text>
+          <rect x="190" y="182" width="210" height="24" rx="4" fill="#38bdf8"><title>Saluki 27B: 43,1 tokens/s</title></rect>
+          <text x="408" y="199" fill="#e5eef7" font-size="14" font-weight="800">43</text>
+          <g fill="#4a5670" font-size="10" text-anchor="middle"><text x="190" y="235">0</text><text x="288" y="235">20</text><text x="385" y="235">40</text><text x="482" y="235">60</text><text x="580" y="235">80</text></g>
+      </svg>
+      <div class="legend"><span>* FreeToken se midió de extremo a extremo, incluido su razonamiento interno; su velocidad real al generar es algo mayor.</span></div>
+    </div>
+
+    <div class="chart">
+      <h3>Memoria de la gráfica ocupada <span class="hint">(GB con un contexto de 8.192 tokens · menos es mejor)</span></h3>
+      <svg viewBox="0 0 600 250" width="100%" role="img" aria-label="Memoria de la gráfica ocupada, sobre 10 GB: Bonsai 2 7,0, Gemma 4 12B 7,9, Bonsai 27B 8,1, gpt-oss-20B con FreeToken 9,3 y Saluki 27B 9,4">
+          <line x1="190" y1="14" x2="190" y2="219" stroke="#22304a" stroke-width="1"/>
+          <text x="180" y="39" text-anchor="end" fill="#e5eef7" font-size="14" font-weight="700">Bonsai 2 27B</text>
+          <rect x="190" y="22" width="231" height="24" rx="4" fill="#38bdf8"><title>Bonsai 2 27B: 7,0 GB</title></rect>
+          <text x="412" y="39" text-anchor="end" fill="#052537" font-size="14" font-weight="800">7,0 GB</text>
+          <text x="180" y="79" text-anchor="end" fill="#e5eef7" font-size="14" font-weight="700">Gemma 4 12B</text>
+          <rect x="190" y="62" width="261" height="24" rx="4" fill="#38bdf8"><title>Gemma 4 12B: 7,9 GB</title></rect>
+          <text x="442" y="79" text-anchor="end" fill="#052537" font-size="14" font-weight="800">7,9 GB</text>
+          <text x="180" y="119" text-anchor="end" fill="#e5eef7" font-size="14" font-weight="700">Bonsai 27B</text>
+          <rect x="190" y="102" width="267" height="24" rx="4" fill="#38bdf8"><title>Bonsai 27B: 8,1 GB</title></rect>
+          <text x="448" y="119" text-anchor="end" fill="#052537" font-size="14" font-weight="800">8,1 GB</text>
+          <text x="180" y="159" text-anchor="end" fill="#e5eef7" font-size="14" font-weight="700">gpt-oss-20B · FreeToken</text>
+          <rect x="190" y="142" width="307" height="24" rx="4" fill="#38bdf8"><title>gpt-oss-20B con FreeToken: 9,3 GB</title></rect>
+          <text x="488" y="159" text-anchor="end" fill="#052537" font-size="14" font-weight="800">9,3 GB</text>
+          <text x="180" y="199" text-anchor="end" fill="#e5eef7" font-size="14" font-weight="700">Saluki 27B</text>
+          <rect x="190" y="182" width="310" height="24" rx="4" fill="#38bdf8"><title>Saluki 27B: entre 9,3 y 9,5 GB</title></rect>
+          <text x="491" y="199" text-anchor="end" fill="#052537" font-size="14" font-weight="800">9,4 GB</text>
+          <line x1="520" y1="8" x2="520" y2="219" stroke="#8b98b0" stroke-width="1" stroke-dasharray="4 4"><title>Límite de la tarjeta: 10 GB</title></line>
+          <g fill="#4a5670" font-size="10" text-anchor="middle"><text x="190" y="235">0</text><text x="256" y="235">2</text><text x="322" y="235">4</text><text x="388" y="235">6</text><text x="454" y="235">8</text><text x="520" y="235" fill="#8b98b0">10 GB</text></g>
+      </svg>
+      <div class="legend"><span>La línea discontinua es el límite de la tarjeta. Lo que queda hasta ella es margen para un contexto más largo.</span></div>
+    </div>
+
+    <p>Dos lecturas. La primera: <strong>Bonsai 2 y Gemma 4 12B empatan a 77 tokens por segundo</strong>, aunque uno tiene más del doble de parámetros que el otro. La segunda: <strong>la memoria separa más que la velocidad</strong>. Bonsai 2 deja 3 GB libres; Saluki ocupa casi toda la tarjeta y con un contexto de 16.384 tokens se quedó sin memoria en la primera petición.</p>
+  </section>
+
+  <section>
+    <h2>Quién acierta</h2>
+    <div class="tw">
+      <table class="cmp">
+        <thead><tr><th></th><th>Gemma 4 12B</th><th>Bonsai 2 27B</th><th>Saluki 27B</th><th>Bonsai 27B</th><th>gpt-oss-20B</th></tr></thead>
+        <tbody>
+          <tr><th>Velocidad</th><td>77 tok/s</td><td>77 tok/s</td><td>43 tok/s</td><td>56 tok/s</td><td>64 tok/s*</td></tr>
+          <tr><th>Arranque en frío</th><td>14 s</td><td>10 s</td><td>35 s</td><td>12 s</td><td>95 s</td></tr>
+          <tr><th>Memoria de la gráfica</th><td>7,9 GB</td><td>7,0 GB</td><td>9,3–9,5 GB</td><td>8,1 GB</td><td>9,3 GB</td></tr>
+          <tr><th>Dos herramientas en una frase</th><td><span class="ok">Las dos</span></td><td><span class="ok">Las dos</span></td><td><span class="ok">Las dos</span></td><td><span class="ok">Las dos</span></td><td><span class="no">Solo una</span><small>olvidó el segundo encargo</small></td></tr>
+          <tr><th>Factura a JSON</th><td><span class="ok">Exacta</span><small>importes como números</small></td><td><span class="ok">Exacta</span><small>importes como números</small></td><td><span class="ok">Exacta</span><small>importes como números</small></td><td>Correcta<small>importes como texto («412,40 €»)</small></td><td>Correcta<small>importes como texto («412,40 €»)</small></td></tr>
+          <tr><th>Problema de razonamiento</th><td><span class="ok">Correcto</span><small>y explica los pasos</small></td><td><span class="ok">Correcto</span><small>y explica los pasos</small></td><td><span class="ok">Correcto</span></td><td><span class="no">Sin respuesta</span><small>agotó 1.500 tokens pensando</small></td><td><span class="ok">Correcto</span></td></tr>
+          <tr><th>Atención al cliente en español</th><td>Da por hecho un código de acceso</td><td>Da por hecho un código de acceso</td><td>Se inventa una caja fuerte con códigos</td><td>Prudente<small>remite a recepción</small></td><td>Se inventa una recepción nocturna de pago</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Tres modelos pasan sin fallos las pruebas estructuradas: <strong>Gemma 4 12B, Bonsai 2 y Saluki</strong>. Los otros dos tropiezan en algo concreto: el Bonsai antiguo se quedó pensando sin llegar a contestar, y gpt-oss-20B hizo una de las dos tareas que se le pidieron y dejó la otra sin hacer.</p>
+  </section>
+
+  <section>
+    <h2>Cuál elegir</h2>
+    <ul>
+      <li><strong>Para casi todo: Gemma 4 12B.</strong> Igual de rápido que el mejor de los grandes, sin fallos en las pruebas y con el motor estándar, sin instalar nada especial.</li>
+      <li><strong>Para agentes y conversaciones largas: Bonsai 2.</strong> Un modelo de 27B que ocupa menos que el de 12B y deja 3 GB para contexto. A cambio necesita una versión propia de llama.cpp.</li>
+      <li><strong>Saluki</strong> acierta lo mismo que Bonsai 2, pero va casi a la mitad de velocidad y sin margen de memoria. En una tarjeta de 10 GB no hay motivo para preferirlo; con 12 o 16 GB la cuenta puede cambiar.</li>
+      <li><strong>gpt-oss-20B con FreeToken</strong> es la opción cuando interesa ese modelo en concreto o un contexto largo (20.480 tokens en esta prueba), sabiendo que tarda más de un minuto y medio en arrancar.</li>
+      <li><strong>Bonsai 27B</strong> queda superado por su sucesor en todo lo medido salvo en prudencia.</li>
+    </ul>
+    <div class="callout">La conclusión incómoda: comprimir un modelo grande a 2 bits <strong>ya no es peor</strong> que usar uno mediano, pero en una tarjeta de 10 GB <strong>tampoco es claramente mejor</strong>. Lo que se gana es margen de memoria, no velocidad ni acierto.</div>
+  </section>
+
+  <section>
+    <h2>Lo que ninguno resuelve</h2>
+    <p>Como asistente de un alojamiento, <strong>cuatro de los cinco respondieron con algo que nadie les había dicho</strong>: un código de acceso, una caja fuerte, una recepción nocturna de pago. Solo uno remitió a recepción. Sin los datos reales delante, ninguno es fiable de cara al público; la solución no es cambiar de modelo, sino darle esos datos en la petición.</p>
+    <p>En el texto histórico pasó algo parecido: los tres modelos de 2 bits colaron un dato falso ya en el primer párrafo, sea un apodo de la ciudad que no existe o una etimología inventada.</p>
+  </section>
+
+  <section>
+    <h2>El motor también cuenta</h2>
+    <p>El mismo modelo no rinde igual en todos los programas. Lo medimos de dos formas.</p>
+    <p><strong>Cuando el modelo no cabe.</strong> gpt-oss-20B ocupa unos 13 GB. Ollama lo reparte entre la tarjeta y el procesador, y ese 43 % que cae en el procesador frena todo. FreeToken deja todos los pesos en la memoria del sistema y lleva a la tarjeta solo los «expertos» que hacen falta en cada paso, de modo que el cálculo se queda entero en la gráfica.</p>
+    <div class="chart">
+      <h3>gpt-oss-20B: mismo modelo, dos motores <span class="hint">(tokens/s · más es mejor)</span></h3>
+      <svg viewBox="0 0 600 150" width="100%" role="img" aria-label="FreeToken 51 tokens por segundo frente a Ollama 24">
+        <!-- ejes/escala 0..60 en x: 150..580 -->
+        <line x1="150" y1="20" x2="150" y2="120" stroke="#22304a" stroke-width="1"/>
+        <!-- FreeToken -->
+        <text x="140" y="45" text-anchor="end" fill="#e5eef7" font-size="15" font-weight="700">FreeToken</text>
+        <rect x="150" y="30" width="366" height="26" rx="5" fill="#34d399"/>
+        <line x1="425" y1="30" x2="425" y2="56" stroke="#0a0e1a" stroke-opacity="0.35" stroke-width="1"/>
+        <rect x="425" y="38" width="118" height="10" rx="3" fill="#0a0e1a" fill-opacity="0.18"/>
+        <text x="526" y="49" fill="#052e1b" font-size="14" font-weight="800">51,2</text>
+        <!-- Ollama -->
+        <text x="140" y="92" text-anchor="end" fill="#e5eef7" font-size="15" font-weight="700">Ollama</text>
+        <rect x="150" y="77" width="172" height="26" rx="5" fill="#38bdf8"/>
+        <text x="332" y="96" fill="#38bdf8" font-size="14" font-weight="800">24,0</text>
+        <!-- ticks -->
+        <g fill="#4a5670" font-size="10">
+          <text x="150" y="135" text-anchor="middle">0</text>
+          <text x="293" y="135" text-anchor="middle">20</text>
+          <text x="437" y="135" text-anchor="middle">40</text>
+          <text x="580" y="135" text-anchor="middle">60</text>
+        </g>
+      </svg>
+      <div class="legend"><span><i style="background:#34d399"></i>FreeToken (rango medido 38–55)</span><span><i style="background:#38bdf8"></i>Ollama (rango 22–24)</span></div>
+    </div>
+    <div class="chart">
+      <h3>Dónde se ejecuta el modelo <span class="hint">(reparto GPU / CPU)</span></h3>
+      <svg viewBox="0 0 600 150" width="100%" role="img" aria-label="FreeToken 100% GPU, Ollama 57% GPU y 43% CPU">
+        <!-- FreeToken 100% GPU -->
+        <text x="140" y="45" text-anchor="end" fill="#e5eef7" font-size="15" font-weight="700">FreeToken</text>
+        <rect x="150" y="30" width="430" height="26" rx="5" fill="#34d399"/>
+        <text x="365" y="48" text-anchor="middle" fill="#052e1b" font-size="13" font-weight="800">100% GPU · expertos en RAM</text>
+        <!-- Ollama 57 GPU / 43 CPU -->
+        <text x="140" y="92" text-anchor="end" fill="#e5eef7" font-size="15" font-weight="700">Ollama</text>
+        <rect x="150" y="77" width="245" height="26" rx="5" fill="#38bdf8"/>
+        <rect x="395" y="77" width="185" height="26" rx="5" fill="#fbbf24"/>
+        <text x="272" y="95" text-anchor="middle" fill="#052537" font-size="12" font-weight="800">57% GPU</text>
+        <text x="487" y="95" text-anchor="middle" fill="#3a2a02" font-size="12" font-weight="800">43% CPU</text>
+      </svg>
+      <div class="legend"><span><i style="background:#34d399"></i>GPU (FreeToken)</span><span><i style="background:#38bdf8"></i>GPU (Ollama)</span><span><i style="background:#fbbf24"></i>CPU (offload, lento)</span></div>
+    </div>
+    <p><strong>Cuando el modelo sí cabe.</strong> Con Gemma 4 12B y exactamente el mismo fichero, llama.cpp dio 74 tokens por segundo frente a 63 de Ollama: un <strong>18 % más</strong>. Ollama usa llama.cpp por dentro, pero con ajustes más conservadores.</p>
+  </section>
+
+  <section>
+    <h2>Ficha técnica</h2>
+    <table class="spec">
+      <tr><td>Tarjeta</td><td>NVIDIA RTX 3080 · 10 GB</td></tr>
+      <tr><td>Motores</td><td>llama.cpp · llama.cpp de PrismML · FreeToken 0.1.3 · Ollama 0.35</td></tr>
+      <tr><td>Contexto</td><td>8.192 tokens en los cuatro modelos de llama.cpp · 20.480 en FreeToken</td></tr>
+      <tr><td>Muestreo</td><td>Temperatura 0,6 · 0 en herramientas y JSON</td></tr>
+      <tr><td>Razonamiento</td><td>Desactivado, salvo en la prueba de razonamiento</td></tr>
+      <tr><td>FreeToken frente a Ollama</td><td>51 frente a 24 tokens/s con gpt-oss-20B (agosto de 2026)</td></tr>
+      <tr><td>llama.cpp frente a Ollama</td><td>74 frente a 63 tokens/s con Gemma 4 12B (octubre de 2026)</td></tr>
+    </table>
+    <p class="figcap">Medición propia en el laboratorio de Lomastrend. La comparativa de los cinco modelos es de octubre de 2026 y consta de <strong>una sola pasada por prueba</strong>: es un indicio, no una evaluación exhaustiva. Las comparativas de motores usan la mediana de tres pasadas con 256 tokens de salida. Los números dependen del equipo; en tarjetas con más memoria el orden puede cambiar.</p>
+  </section>
+
+  <div class="cta">
+    <h2>¿El objetivo?</h2>
+    <p>Ejecutar modelos grandes de verdad en hardware de andar por casa, sin pagar por token a una nube. Este banco de pruebas forma parte del laboratorio de IA local de Lomastrend.</p>
+    <a class="btn" href="/#portfolio">Ver más proyectos</a>
+  </div>
+
+  <footer>Lomastrend · Laboratorio de IA local · Medición propia, agosto y octubre de 2026</footer>
+</div>
+</body>
+</html>

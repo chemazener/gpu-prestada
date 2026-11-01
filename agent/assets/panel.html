@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPU Prestada — tarjeta local · LoMasTrend</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+  :root { --bg:#06060a; --card:#12121a; --line:#24243a; --text:#f0f0f5; --dim:#9a9aad;
+          --violet:#8b5cf6; --emerald:#10b981; --amber:#f59e0b; --red:#ef4444; --gray:#8b8b9e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 "Segoe UI",system-ui,sans-serif; }
+  main { max-width:1500px; margin:0 auto; padding:clamp(12px,2.2vw,28px) clamp(12px,2.4vw,32px) 24px; }
+  /* Ventana ancha: dos columnas (estado y pasos · medidores y explicación) */
+  @media (min-width:820px) {
+    .cols { display:grid; grid-template-columns:minmax(300px,1fr) minmax(0,1.7fr); gap:12px; align-items:start; }
+    .cols .card:last-child { margin-bottom:12px; }
+  }
+  /* Ventana estrecha: una columna, con los medidores justo debajo del estado */
+  @media (max-width:819px) {
+    .cols { display:flex; flex-direction:column; } .cols > div { display:contents; }
+    #stateCard { order:1; } #gaugeCard { order:2; } #stepsCard { order:3; } .about { order:4; }
+  }
+  /* Ventana grande o maximizada: tres columnas (estado y pasos · medidores · explicación)
+     para que todo quepa en pantalla sin desplazarse; el script ajusta la escala al alto. */
+  @media (min-width:1200px) {
+    .cols { grid-template-columns:minmax(300px,1fr) minmax(0,1.5fr) minmax(280px,1fr); gap:14px; }
+    .cols > div:nth-child(2) { display:contents; }
+    .cols > div:first-child { grid-column:1; grid-row:1; } #gaugeCard { grid-column:2; grid-row:1; } .cols .about { grid-column:3; grid-row:1; }
+    .stats { grid-template-columns:repeat(3,1fr) !important; }
+    header { margin-bottom:10px; } header img { width:72px; }
+  }
+  /* Ventana baja y apaisada: cabecera compacta */
+  @media (max-height:480px) { header { margin-bottom:8px; } header img { width:52px; } h1 { font-size:19px; } }
+  header { display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+  header img { width:clamp(72px,11vw,112px); height:auto; aspect-ratio:1; flex:none; }
+  h1 { font-size:22px; margin:0; letter-spacing:.2px; }
+  header p { margin:2px 0 0; color:var(--dim); font-size:13px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:12px; }
+  .state { display:flex; align-items:center; gap:12px; }
+  .dot { width:14px; height:14px; border-radius:50%; flex:none; background:var(--gray); box-shadow:0 0 0 4px rgba(139,139,158,.18); }
+  .s0 .dot { background:var(--emerald); box-shadow:0 0 0 4px rgba(16,185,129,.2); }
+  .s1 .dot { background:var(--amber); box-shadow:0 0 0 4px rgba(245,158,11,.2); }
+  .state b { font-size:17px; display:block; overflow-wrap:anywhere; }
+  .state span { color:var(--dim); font-size:13px; }
+  .bar { height:8px; background:#1d1d2c; border-radius:6px; overflow:hidden; margin-top:10px; display:none; }
+  .bar i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--violet),var(--emerald)); transition:width .4s; }
+  button { font:inherit; color:#fff; background:var(--violet); border:0; border-radius:10px; padding:11px 16px; width:100%;
+           font-weight:600; cursor:pointer; margin-top:12px; }
+  button.off { background:#2a2a3d; color:var(--text); }
+  button:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid #fff; outline-offset:2px; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.8px; color:var(--dim); margin:0 0 8px; font-weight:600; }
+  ul { list-style:none; margin:0; padding:0; }
+  li { display:flex; gap:10px; padding:5px 0; align-items:flex-start; }
+  li .ic { flex:none; width:10px; height:10px; border-radius:50%; margin:6px 4px 0 2px; background:var(--gray); }
+  li.ok .ic { background:var(--emerald); } li.wait .ic { background:var(--amber); } li.bad .ic { background:var(--red); }
+  li em { font-style:normal; color:var(--dim); font-size:12px; margin-left:6px; }
+  li small { display:block; color:var(--dim); overflow-wrap:anywhere; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .lsub { color:var(--dim); font-size:13px; margin:0 0 10px; }
+  .lrow { display:flex; align-items:center; gap:10px; font-size:13px; color:var(--dim); margin-bottom:12px; flex-wrap:wrap; }
+  .lrow select { flex:1; min-width:200px; font:inherit; color:var(--text); background:#0c0c13; border:1px solid var(--line); border-radius:10px; padding:9px 10px; }
+  .lgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(235px,1fr)); gap:10px; }
+  .lapp { background:#0c0c13; border:1px solid var(--line); border-radius:10px; padding:10px 12px; min-width:0; display:flex; flex-direction:column; }
+  .lapp b { display:block; font-size:14px; } .lapp code { color:var(--dim); font-size:11.5px; }
+  .lbtns { display:flex; gap:6px; margin-top:auto; padding-top:9px; }
+  .lbtns button { width:auto; flex:1; padding:7px 8px; font-size:12.5px; border-radius:8px; white-space:nowrap; }
+  .lmsg { margin-top:10px; font-size:13px; color:var(--dim); min-height:1.2em; overflow-wrap:anywhere; }
+  .lmsg.bad { color:var(--red); }
+  .kv { background:#0c0c13; border:1px solid var(--line); border-radius:10px; padding:9px 11px; min-width:0; }
+  .kv small { color:var(--dim); display:block; font-size:12px; }
+  .kv b { font-size:15px; overflow-wrap:anywhere; }
+  .meter { height:6px; background:#1d1d2c; border-radius:4px; overflow:hidden; margin-top:6px; }
+  .meter i { display:block; height:100%; background:var(--violet); width:0; transition:width .4s; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(126px,1fr)); gap:10px; }
+  .stat { background:#0c0c13; border:1px solid var(--line); border-radius:10px; padding:12px 8px; text-align:center; min-width:0; overflow:hidden; }
+  .stat .k { font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--dim); margin-top:9px; }
+  .stat .sub { font-size:11px; color:var(--dim); margin-top:2px; min-height:14px; overflow-wrap:anywhere; }
+  /* los medidores crecen con la ventana: --z lo fija el script según el ancho de cada casilla */
+  .viz { position:relative; width:104px; height:104px; margin:0 auto; zoom:var(--z,1); }
+  .gc { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:4; pointer-events:none; }
+  .gc .num { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1; text-shadow:0 1px 4px #000,0 0 3px #000; }
+  .gc .u { font-size:11px; opacity:.75; margin-top:2px; text-shadow:0 1px 3px #000; }
+  .liq { border:2px solid var(--line); border-radius:16px; overflow:hidden; background:#08080d; }
+  .liq .fill { position:absolute; left:0; right:0; bottom:0; height:0; z-index:1;
+    background:linear-gradient(180deg,var(--c,#8b5cf6),color-mix(in srgb,var(--c,#8b5cf6) 25%,#08080d));
+    transition:height .9s cubic-bezier(.22,1,.36,1),background .5s; }
+  .liq .fill::before { content:""; position:absolute; left:-5%; right:-5%; top:-6px; height:12px; background:var(--c,#8b5cf6);
+    border-radius:50%; opacity:.95; filter:blur(.5px); animation:bob 2.6s ease-in-out infinite; }
+  .liq .shine { position:absolute; top:0; bottom:0; width:36%; left:-40%; z-index:2;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent); animation:sweep 3.4s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform:translateY(0) scaleX(1) } 50% { transform:translateY(-3px) scaleX(1.04) } }
+  @keyframes sweep { 0% { left:-40% } 55%,100% { left:120% } }
+  .eq { position:absolute; inset:0; z-index:1; display:flex; align-items:flex-end; justify-content:center; gap:6px; padding:0 0 18px; }
+  .eq b { width:10px; height:66px; border-radius:5px 5px 2px 2px; transform:scaleY(.12); transform-origin:50% 100%;
+    background:linear-gradient(180deg,var(--c,#8b5cf6),color-mix(in srgb,var(--c,#8b5cf6) 20%,#08080d));
+    animation:eqb var(--spd,1s) ease-in-out infinite; }
+  .eq b:nth-child(2) { animation-delay:.12s } .eq b:nth-child(3) { animation-delay:.24s }
+  .eq b:nth-child(4) { animation-delay:.36s } .eq b:nth-child(5) { animation-delay:.48s }
+  @keyframes eqb { 0%,100% { transform:scaleY(calc(.12 + .10*var(--a,.1))) } 50% { transform:scaleY(calc(.15 + .85*var(--a,.1))) } }
+  .flame .grp { position:absolute; left:0; right:0; bottom:18px; height:44px; z-index:1; transform:scale(var(--sc,.6));
+    transform-origin:50% 100%; transition:transform .6s; }
+  .flame .f { position:absolute; left:50%; bottom:0; transform-origin:50% 100%; filter:blur(.6px);
+    border-radius:50% 50% 50% 50%/60% 60% 42% 42%; animation:flick var(--spd,1s) ease-in-out infinite; }
+  .flame .f1 { width:26px; height:42px; margin-left:-13px; background:linear-gradient(180deg,var(--c,#ff5a36),#5a0f1a); }
+  .flame .f2 { width:16px; height:28px; margin-left:-8px; background:linear-gradient(180deg,#ffd777,var(--c,#ff8a3d)); animation-duration:calc(var(--spd,1s)*.7); }
+  .flame .f3 { width:8px; height:15px; margin-left:-4px; background:linear-gradient(180deg,#fff4cf,#ffd777); animation-duration:calc(var(--spd,1s)*.5); }
+  @keyframes flick { 0%,100% { transform:scaleY(1) skewX(0) } 25% { transform:scaleY(1.15) skewX(4deg) }
+    50% { transform:scaleY(.9) skewX(-4deg) } 75% { transform:scaleY(1.07) skewX(3deg) } }
+  .bolt svg { position:absolute; inset:0; margin:auto; width:60px; height:60px; z-index:1; }
+  .bolt path { fill:var(--c,#f59e0b); opacity:.85; filter:drop-shadow(0 0 7px var(--c,#f59e0b)); transform-origin:center;
+    animation:zap var(--spd,1.8s) ease-in-out infinite; }
+  @keyframes zap { 0%,100% { opacity:.5; transform:scale(.92) } 50% { opacity:1; transform:scale(1.08) } }
+  .pulse .core { position:absolute; inset:0; margin:auto; width:12px; height:12px; border-radius:50%; background:var(--c,#10b981); box-shadow:0 0 12px var(--c,#10b981); }
+  .pulse .ring { position:absolute; inset:0; margin:auto; width:20px; height:20px; border-radius:50%; border:2px solid var(--c,#10b981);
+    animation:radar var(--spd,2.6s) ease-out infinite; }
+  .pulse .ring.p2 { animation-delay:1.3s; }
+  @keyframes radar { 0% { transform:scale(1); opacity:.75 } 100% { transform:scale(3.4); opacity:0 } }
+  .stat.na .viz { opacity:.35; } .stat.na * { animation-play-state:paused !important; }
+  @media (prefers-reduced-motion:reduce) { .stat * { animation:none !important; } }
+  .about p { margin:0 0 8px; color:#d5d5e2; } .about p:last-child { margin:0; }
+  details summary { cursor:pointer; color:var(--dim); font-size:13px; }
+  .stats { --z:1; }
+  pre { margin:8px 0 0; font:12px/1.4 Consolas,monospace; color:#c8c8d8; white-space:pre-wrap; overflow-wrap:anywhere;
+        max-height:180px; overflow:auto; }
+  footer { color:var(--dim); font-size:12px; text-align:center; margin-top:6px; }
+  footer a { color:var(--dim); }
+  @media (max-width:380px) { .grid { grid-template-columns:1fr; } header img { width:64px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="/logo.png" alt="LoMasTrend">
+    <div><h1>GPU Prestada</h1><p>LoMasTrend · tu tarjeta gráfica, al servicio de tu IA</p></div>
+  </header>
+
+  <div class="cols">
+  <div>
+  <section class="card" id="stateCard">
+    <div class="state"><div class="dot"></div><div><b id="stLine">Arrancando…</b><span id="stSub"></span></div></div>
+    <div class="bar" id="bar"><i id="barFill"></i></div>
+    <button id="btn" type="button">Prestar la tarjeta</button>
+  </section>
+
+  <section class="card" id="stepsCard">
+    <h2>Puesta en marcha</h2>
+    <ul id="steps"></ul>
+    <div id="tokBox" style="display:none;margin-top:10px">
+      <p style="margin:0 0 8px;color:#d5d5e2">Este PC no tiene Tailscale, así que se conectará él solo a LoMasTrend por un canal cifrado. Pega el <b>código de alta</b> que te han dado:</p>
+      <div style="display:flex;gap:8px"><input id="tok" type="password" placeholder="código de alta" autocomplete="off" style="flex:1;min-width:0;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid #3a3a4a;background:#15151f;color:#fff"><button id="tokBtn" type="button" style="width:auto">Guardar</button></div>
+    </div>
+  </section>
+
+  </div>
+  <div>
+  <section class="card" id="gaugeCard">
+    <h2>Esta tarjeta · <span id="gName">—</span></h2>
+    <div class="stats">
+      <div class="stat" id="st-vram"><div class="viz liq"><div class="fill"></div><div class="shine"></div><div class="gc"><span class="num">—</span><span class="u">MB</span></div></div><div class="k">Memoria usada</div><div class="sub">—</div></div>
+      <div class="stat" id="st-vfree"><div class="viz liq"><div class="fill"></div><div class="shine"></div><div class="gc"><span class="num">—</span><span class="u">MB</span></div></div><div class="k">Memoria libre</div><div class="sub">—</div></div>
+      <div class="stat" id="st-util"><div class="viz eqw"><div class="eq"><b></b><b></b><b></b><b></b><b></b></div><div class="gc"><span class="num">—</span><span class="u">%</span></div></div><div class="k" id="gUtilLbl">Carga de la gráfica</div><div class="sub">—</div></div>
+      <div class="stat" id="st-temp"><div class="viz flame"><div class="grp"><div class="f f1"></div><div class="f f2"></div><div class="f f3"></div></div><div class="gc"><span class="num">—</span><span class="u">°C</span></div></div><div class="k">Temperatura</div><div class="sub">—</div></div>
+      <div class="stat" id="st-power"><div class="viz bolt"><svg viewBox="0 0 24 24"><path d="M13 2 L4 14 h6 l-2 8 11-13 h-7 z"/></svg><div class="gc"><span class="num">—</span><span class="u">W</span></div></div><div class="k">Consumo</div><div class="sub">—</div></div>
+      <div class="stat" id="st-jobs"><div class="viz pulse"><span class="core"></span><span class="ring p"></span><span class="ring p2"></span><div class="gc"><span class="num">—</span><span class="u"></span></div></div><div class="k">Trabajos atendidos</div><div class="sub">—</div></div>
+    </div>
+  </section>
+
+  <section class="card about">
+    <h2>Qué hace este programa</h2>
+    <p>Convierte este ordenador en una <b>segunda tarjeta gráfica</b> para la inteligencia artificial de LoMasTrend. Cuando el servidor tiene trabajo de IA, puede enviárselo a este equipo para que lo resuelva su tarjeta NVIDIA.</p>
+    <p><b>No te quita la tarjeta:</b> si la estás usando tú (un juego, edición de vídeo…), deja de prestarla solo y vuelve cuando queda libre. También puedes pausarlo con el botón de arriba.</p>
+    <p><b>Es privado:</b> si tienes Tailscale, solo acepta conexiones de esa red privada; si no, es este programa el que se conecta a LoMasTrend por un canal cifrado con un código de alta. En ningún caso abre puertos a Internet.</p>
+    <p>Puedes minimizar o cerrar esta ventana: el programa sigue funcionando en el icono junto al reloj. Para cerrarlo del todo, clic derecho en ese icono y «Salir».</p>
+  </section>
+
+  </div>
+  </div>
+
+  <section class="card" id="launchCard" style="display:none">
+    <h2>Programas con IA</h2>
+    <p class="lsub">Abre cualquiera de estos programas ya conectado a la IA, o déjalo como icono en el escritorio. Si eliges un modelo acabado en <b>@servidor</b>, lo atiende la gráfica del servidor.</p>
+    <label class="lrow">Modelo <select id="lModel"></select></label>
+    <p class="lsub" id="lHidden" style="display:none;margin-top:-6px"></p>
+    <div class="lgrid" id="lGrid"></div>
+    <div class="lmsg" id="lMsg" role="status"></div>
+  </section>
+
+  <section class="card">
+    <details><summary>Registro de actividad</summary><pre id="log">…</pre></details>
+  </section>
+
+  <footer><span id="ver"></span> · nodo <span id="node"></span> · <a href="#" id="quit">Cerrar el programa</a></footer>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let cur = null;
+function step(cls, title, sub) {
+  const tag = cls === 'ok' ? 'listo' : cls === 'bad' ? 'falta' : cls === 'off' ? 'apagada' : 'en curso';
+  return `<li class="${cls}"><span class="ic"></span><div>${title}<em>${tag}</em>${sub ? `<small>${sub}</small>` : ''}</div></li>`;
+}
+function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+// --- medidores (los mismos del panel de VRAM, con los datos de esta tarjeta) ---
+const HEX = { ok:'#10b981', warn:'#f59e0b', bad:'#ef4444', acc:'#8b5cf6', gray:'#8b8b9e' };
+const q = sel => document.querySelector(sel);
+const clamp = x => Math.max(0, Math.min(100, x || 0));
+const toneBy = (v, warn, bad) => v == null ? 'acc' : v >= bad ? 'bad' : v >= warn ? 'warn' : 'ok';
+function tween(num, to) {
+  const from = num._cur == null ? to : num._cur; num._cur = to;
+  if (from === to) { num.textContent = Math.round(to); return; }
+  const t0 = performance.now();
+  (function step(t) { let k = Math.min(1, (t - t0) / 520); k = 1 - Math.pow(1 - k, 3);
+    num.textContent = Math.round(from + (to - from) * k); if (k < 1) requestAnimationFrame(step); })(t0);
+}
+function num1(id, val) { const n = q('#' + id + ' .num'); if (typeof val === 'string') { n._cur = null; n.textContent = val; } else tween(n, val || 0); }
+function sub1(id, t) { q('#' + id + ' .sub').textContent = t; }
+function na(id, missing) { $(id).classList.toggle('na', !!missing); }
+function tempCol(t) { return t >= 83 ? '#ef4444' : t >= 70 ? '#ff5a36' : t >= 58 ? '#ff8a3d' : t >= 45 ? '#f0a850' : '#4aa3ff'; }
+function renderStats(s) {
+  const g = s.gpu, ok = g.ok, total = g.total || 1, free = Math.max(0, g.total - g.used), upct = g.used / total * 100;
+  for (const id of ['st-vram', 'st-vfree', 'st-util']) na(id, !ok);
+  if (ok) {
+    num1('st-vram', g.used); sub1('st-vram', Math.round(upct) + ' % de ' + g.total + ' MB');
+    q('#st-vram .fill').style.height = clamp(upct) + '%'; q('#st-vram .fill').style.setProperty('--c', HEX[toneBy(upct, 70, 90)]);
+    num1('st-vfree', free); sub1('st-vfree', 'disponibles');
+    q('#st-vfree .fill').style.height = clamp(100 - upct) + '%'; q('#st-vfree .fill').style.setProperty('--c', HEX.acc);
+    const lent = s.lent_load > 0;
+    num1('st-util', g.util); $('gUtilLbl').textContent = lent ? 'Carga cedida' : 'Carga de la gráfica';
+    sub1('st-util', lent ? 'trabajando para el servidor' : s.auto_pause ? 'la estás usando tú' : g.util >= 15 ? 'uso de este equipo' : 'en reposo');
+    const a = Math.max(.06, Math.min(1, g.util / 100)), eq = q('#st-util .eq');
+    eq.style.setProperty('--a', a.toFixed(2)); eq.style.setProperty('--spd', (1.35 - a * .95).toFixed(2) + 's');
+    eq.style.setProperty('--c', lent ? HEX.ok : HEX[toneBy(g.util, 60, 90)]);
+  } else { for (const id of ['st-vram', 'st-vfree', 'st-util']) { num1(id, '—'); sub1(id, 'sin tarjeta'); } }
+  const hasT = ok && g.temp >= 0; na('st-temp', !hasT);
+  if (hasT) {
+    num1('st-temp', g.temp); sub1('st-temp', (g.temp >= 83 ? 'muy caliente' : g.temp >= 70 ? 'caliente' : g.temp >= 45 ? 'normal' : 'fría') + (g.fan >= 0 ? ' · ventilador ' + g.fan + ' %' : ''));
+    const t = Math.max(0, Math.min(1, (g.temp - 25) / 60)), fl = q('#st-temp .grp');
+    fl.style.setProperty('--sc', (.45 + .8 * t).toFixed(2)); fl.style.setProperty('--spd', (1.25 - .75 * t).toFixed(2) + 's'); fl.style.setProperty('--c', tempCol(g.temp));
+  } else { num1('st-temp', '—'); sub1('st-temp', 'no disponible'); }
+  const hasP = ok && g.power >= 0; na('st-power', !hasP);
+  if (hasP) {
+    const lim = g.power_limit > 0 ? g.power_limit : 0, ppct = lim ? g.power / lim * 100 : Math.min(100, g.power);
+    num1('st-power', g.power); sub1('st-power', lim ? 'de ' + lim + ' W' : 'vatios ahora');
+    const a = Math.max(.05, Math.min(1, ppct / 100)), bo = q('#st-power .bolt');
+    bo.style.setProperty('--spd', (2.3 - a * 1.7).toFixed(2) + 's'); bo.style.setProperty('--c', HEX[toneBy(ppct, 80, 95)]);
+  } else { num1('st-power', '—'); sub1('st-power', 'esta tarjeta no lo informa'); }
+  num1('st-jobs', s.served); sub1('st-jobs', s.inflight ? 'trabajando ahora' : s.state === 0 ? 'a la espera' : s.state === 1 ? 'en pausa' : 'sin prestar');
+  const pu = q('#st-jobs .pulse'); pu.style.setProperty('--c', [HEX.ok, HEX.warn, HEX.gray][s.state]); pu.style.setProperty('--spd', s.inflight ? '1s' : '2.6s');
+}
+function render(s) {
+  cur = s;
+  $('stateCard').className = 'card s' + s.state;
+  $('stLine').textContent = s.status;
+  $('stSub').textContent = s.state === 0 ? 'El servidor puede enviar trabajos a esta tarjeta.'
+    : s.state === 1 ? 'El servidor no enviará trabajos hasta que vuelvas a prestar.' : 'Falta algo para poder prestar; mira los pasos de abajo.';
+  const p = s.progress;
+  $('bar').style.display = p >= 0 ? 'block' : 'none';
+  $('barFill').style.width = Math.max(2, p) + '%';
+  $('btn').textContent = s.lending ? 'Pausar el préstamo' : 'Prestar la tarjeta';
+  $('btn').className = s.lending ? 'off' : '';
+  const want = s.want_models || [], have = s.models || [];
+  const missing = want.filter(m => !have.includes(m));
+  $('steps').innerHTML =
+    step(s.gpu.ok ? 'ok' : 'bad', 'Tarjeta NVIDIA', s.gpu.ok ? esc(s.gpu.name) : 'No se detecta. Instala los controladores de NVIDIA.') +
+    (s.mode === 'tunnel'
+      ? step(!s.has_token ? 'bad' : s.tunnel_ok ? 'ok' : 'wait', 'Conexión segura con LoMasTrend',
+          !s.has_token ? 'Falta el código de alta (más abajo)' : s.tunnel_ok ? 'Canal cifrado abierto con ' + esc(s.relay) : 'Conectando con ' + esc(s.relay) + '…')
+      : step(s.tailscale_ip ? 'ok' : 'bad', 'Red privada Tailscale', s.tailscale_ip ? 'Conectado · ' + esc(s.tailscale_ip)
+      : 'Instala Tailscale e inicia sesión: <a href="https://tailscale.com/download/windows" target="_blank" style="color:#a78bfa">descargar</a>')) +
+    step(s.ollama_ok ? 'ok' : 'wait', 'Motor de IA (Ollama)', s.ollama_ok ? 'En marcha' : (s.task || 'Preparándolo…')) +
+    step(!s.ollama_ok || missing.length ? 'wait' : 'ok', 'Modelos de IA',
+      !s.ollama_ok ? 'Pendiente del motor' : missing.length ? 'Falta ' + esc(missing.join(', ')) + (s.task ? ' · ' + esc(s.task) : '')
+      : (have.length ? esc(have.join(', ')) : 'Ninguno solicitado todavía')) +
+    step(s.broker_ok ? 'ok' : (s.tailscale_ip || s.mode === 'tunnel' ? 'wait' : 'bad'), 'Conexión con el servidor', s.broker_ok ? 'Dado de alta como «' + esc(s.name) + '»' : 'Sin respuesta de ' + esc(s.mode === 'tunnel' ? s.relay : s.broker)) +
+    step(s.client_enabled ? 'ok' : 'off', 'IA del servidor en este PC', s.client_enabled
+      ? (s.client_gateway ? 'Activada: en el Ollama combinado (127.0.0.1:' + (s.gateway_port || 11434) + ') salen también los modelos del servidor, acabados en <b>@servidor</b> o <b>@tarjeta</b>'
+         : 'Activada: usa <b>http://127.0.0.1:' + s.client_port + '</b> como si fuera Ollama (lo atiende el servidor)')
+      : 'Desactivada (la activa el administrador en el Monitor VRAM)');
+  $('tokBox').style.display = s.mode === 'tunnel' && !s.has_token ? 'block' : 'none';
+  $('gName').textContent = s.gpu.ok ? s.gpu.name.replace('NVIDIA GeForce ', '') : 'no detectada';
+  renderStats(s);
+  $('ver').textContent = 'Versión ' + s.version;
+  $('node').textContent = s.name;
+  $('log').textContent = (s.log || []).join('\n');
+  if (!render.done) { render.done = true; fitPage(); } else shrinkToFit();
+}
+// ---- Programas con IA (ollama launch) ----
+async function loadLaunch() {
+  let d; try { d = await (await fetch('/api/launch')).json(); } catch (e) { return; }
+  if (!d.available || !(d.integrations || []).length) { $('launchCard').style.display = 'none'; return; }
+  $('launchCard').style.display = '';
+  // Agrupados por la máquina que los atiende: este PC, el servidor y cada tarjeta prestada («modelo@máquina»).
+  const sel = $('lModel'), keep = sel.value, groups = {};
+  (d.models || []).forEach(m => { const i = m.lastIndexOf('@'), g = i > 0 ? m.slice(i + 1) : '';
+    (groups[g] = groups[g] || []).push({ value: m, label: i > 0 ? m.slice(0, i) : m }); });
+  const title = g => g === '' ? 'En este PC' : g === 'servidor' ? 'Servidor · RTX 3080' : 'Tarjeta prestada · ' + g;
+  const order = Object.keys(groups).sort((a, b) => (a === '' ? -2 : a === 'servidor' ? -1 : 0) - (b === '' ? -2 : b === 'servidor' ? -1 : 0) || a.localeCompare(b));
+  sel.innerHTML = '<option value="">Elegir al abrir</option>' + order.map(g =>
+    `<optgroup label="${esc(title(g))}">` + groups[g].sort((x, y) => x.label.localeCompare(y.label))
+      .map(m => `<option value="${esc(m.value)}">${esc(m.label)}</option>`).join('') + '</optgroup>').join('');
+  if ([...sel.options].some(o => o.value === keep)) sel.value = keep;
+  const hid = $('lHidden'); hid.style.display = d.hidden ? '' : 'none';
+  hid.textContent = d.hidden ? 'Solo salen los modelos que sirven para estos programas: que sepan usar herramientas y con al menos 24.000 tokens de contexto (' + d.hidden + ' ocultos).' : '';
+  $('lGrid').innerHTML = d.integrations.map(it => `<div class="lapp"><b>${esc(it.name)}</b><code>ollama launch ${esc(it.id)}</code>
+    <div class="lbtns"><button type="button" data-l="open" data-id="${esc(it.id)}">▶ Abrir</button>
+    <button type="button" class="off" data-l="shortcut" data-id="${esc(it.id)}">📌 Acceso directo</button></div></div>`).join('');
+}
+$('lGrid').addEventListener('click', async ev => {
+  const b = ev.target.closest('button[data-l]'); if (!b) return;
+  const name = b.closest('.lapp').querySelector('b').textContent, msg = $('lMsg');
+  b.disabled = true; msg.className = 'lmsg'; msg.textContent = 'Un momento…';
+  try {
+    const r = await (await fetch('/api/launch/' + b.dataset.l, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: b.dataset.id, model: $('lModel').value }) })).json();
+    if (!r.ok) throw new Error(r.error || 'error');
+    msg.textContent = b.dataset.l === 'open' ? 'Abriendo ' + name + ' en una ventana nueva.'
+      : 'Acceso directo creado en el escritorio: ' + (r.result || name);
+  } catch (e) { msg.className = 'lmsg bad'; msg.textContent = 'No se pudo: ' + e.message; }
+  b.disabled = false;
+});
+// Solo modelos de máquinas conectadas ahora mismo: el servidor ya filtra las tarjetas apagadas, en pausa o
+// cedidas a su dueño; aquí se refresca a menudo y al volver a la ventana (1.14.5).
+loadLaunch(); setInterval(() => { if (document.activeElement !== $('lModel')) loadLaunch(); }, 20000);
+window.addEventListener('focus', () => loadLaunch());
+
+async function poll() {
+  try { render(await (await fetch('/api/status')).json()); }
+  catch (e) { $('stLine').textContent = 'El programa se ha cerrado'; $('stSub').textContent = 'Vuelve a abrir GPU Prestada para continuar.'; $('stateCard').className = 'card'; }
+}
+$('btn').onclick = async () => {
+  if (!cur) return;
+  $('btn').disabled = true;
+  await fetch('/api/lending', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ on: !cur.lending }) });
+  await poll(); $('btn').disabled = false;
+};
+$('tokBtn').onclick = async () => {
+  const v = $('tok').value.trim(); if (!v) return;
+  $('tokBtn').disabled = true;
+  await fetch('/api/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: v }) });
+  $('tok').value = ''; await poll(); $('tokBtn').disabled = false;
+};
+$('tok').onkeydown = e => { if (e.key === 'Enter') $('tokBtn').click(); };
+$('quit').onclick = async e => { e.preventDefault(); await fetch('/api/quit', { method: 'POST' }); setTimeout(poll, 800); };
+// Los medidores se adaptan al tamaño de la ventana.
+const statsEl = q('.stats');
+function fit() {
+  const st = q('.stat'); if (!st) return;
+  const z = Math.max(.8, Math.min(1.9, (st.clientWidth - 18) / 104));
+  statsEl.style.setProperty('--z', z.toFixed(3));
+}
+new ResizeObserver(fit).observe(statsEl); fit();
+// En ventana ancha (dos o tres columnas) todo debe verse sin desplazarse: si el
+// contenido es más alto que la ventana, se reduce la escala de la página.
+// En una columna (ventana estrecha) se desplaza con normalidad.
+function shrinkToFit() {
+  if (innerWidth < 820 || q('details').open) return;
+  for (let i = 0; i < 4; i++) {
+    fit();
+    const h = document.documentElement.scrollHeight, z = parseFloat(document.body.style.zoom) || 1;
+    if (h <= innerHeight + 1 || z <= .55) break;
+    document.body.style.zoom = Math.max(.55, z * innerHeight / h - .004).toFixed(3);
+  }
+}
+function fitPage() { document.body.style.zoom = 1; shrinkToFit(); fit(); }
+addEventListener('resize', fitPage);
+q('details').addEventListener('toggle', () => { if (!q('details').open) fitPage(); });
+poll(); setInterval(poll, 1500);
+</script>
+</body>
+</html>

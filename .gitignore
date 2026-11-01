@@ -1,0 +1,10 @@
+# Build output / Binarios compilados
+agent/gpu-prestada.exe
+agent/gpu-prestada-linux-*
+*.new
+# Secrets / Secretos
+relay/tls/key.pem
+*.bak*
+pruebas/*.json
+relay/.venv/
+__pycache__/
