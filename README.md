@@ -39,6 +39,23 @@ curl -fsSL https://lomastrend.com/gpu-prestada/instalar.sh | sh
 
 It installs to `~/.local/bin`, runs as a systemd user service (with *linger*, so it survives SSH logout) and is driven with `gpu-prestada` (navigable text menu), `estado`, `codigo XXXX`, `pausar`, `reanudar`, `parar`, `desinstalar`. The menu opens AI programs against the combined Ollama (`127.0.0.1:11438`), choosing program and model.
 
+## Install from GitHub (one command each)
+
+**Client** (Linux, the PC that lends or uses the cards):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/chemazener/gpu-prestada/main/web/instalar.sh | sh
+```
+
+**Server** (the relay for PCs without Tailscale, any Linux): installs `relay.py` for your user (Python venv, 10-year self-signed certificate, systemd user service) and prints the certificate **pin**:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/chemazener/gpu-prestada/main/relay/instalar-relay.sh \
+  | GPU_RELAY_BROKER=http://YOUR-OLLAMA-PROXY:11434 GPU_RELAY_NAME=relay.example.com sh
+```
+
+Only `GPU_RELAY_BROKER` is required (other variables are documented at the top of the script). The relay is the only server piece that installs on its own: `server/nodes.py` and the patches apply to the author's Ollama proxy / vram-broker / ComfyUI proxy, which are not in this repository. To use your own relay, build the agent with its pin and address (`defaultRelayPin`, `defaultRelay` in `agent/tunnel.go`); the client installer downloads the binary from the author's server.
+
 ## Notes
 
 - This is the author's lab code: it contains private-network addresses (Tailscale/LAN) and machine names. They are not reachable from outside, but change them for your environment.

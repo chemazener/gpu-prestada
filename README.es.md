@@ -44,6 +44,23 @@ curl -fsSL https://lomastrend.com/gpu-prestada/instalar.sh | sh
 
 Se instala en `~/.local/bin`, queda como servicio de usuario de systemd (con *linger* para seguir al cerrar la sesión SSH) y se maneja con `gpu-prestada` (menú de texto navegable), `estado`, `codigo XXXX`, `pausar`, `reanudar`, `parar`, `desinstalar`. Desde el menú se abren los «Programas con IA» (Claude Code, Codex, OpenCode…) contra el Ollama combinado del PC (`127.0.0.1:11438`), eligiendo programa y modelo.
 
+## Instalar desde GitHub (una orden para cada lado)
+
+**Cliente** (Linux, el PC que presta o usa las tarjetas):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/chemazener/gpu-prestada/main/web/instalar.sh | sh
+```
+
+**Servidor** (el relé para PCs sin Tailscale, cualquier Linux): instala `relay.py` para tu usuario (entorno de Python, certificado propio de 10 años, servicio de usuario de systemd) y muestra la **huella** del certificado:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/chemazener/gpu-prestada/main/relay/instalar-relay.sh \
+  | GPU_RELAY_BROKER=http://TU-PROXY-OLLAMA:11434 GPU_RELAY_NAME=relay.midominio.com sh
+```
+
+Solo `GPU_RELAY_BROKER` es obligatoria (las demás variables están en la cabecera del script). El relé es la única pieza del servidor que se instala sola: `server/nodes.py` y los parches se aplican sobre el proxy de Ollama, el vram-broker y el proxy de ComfyUI del autor, que no están en este repositorio. Para usar tu propio relé, compila el agente con su huella y dirección (`defaultRelayPin`, `defaultRelay` en `agent/tunnel.go`); el instalador del cliente baja el binario del servidor del autor.
+
 ## Notas para publicar / reutilizar
 
 - Este repositorio es el código del lab de chema: contiene direcciones de su red privada (Tailscale/LAN) y nombres de máquinas. No son accesibles desde fuera, pero habrá que cambiarlas para otro entorno.

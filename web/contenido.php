@@ -151,6 +151,21 @@ $sha     = htmlspecialchars(substr($ver['sha256'] ?? '', 0, 16), ENT_QUOTES, 'UT
     <tr><td><code>gpu-prestada ayuda</code></td><td>La lista de órdenes</td></tr>
   </table></div>
 
+  <h2 id="github">Instalar desde GitHub</h2>
+  <p>El código está publicado en <a href="https://github.com/chemazener/gpu-prestada">github.com/chemazener/gpu-prestada</a> (README en inglés y en español). Hay una orden para cada lado:</p>
+  <h3>El cliente (el PC que presta o usa las tarjetas) · Linux</h3>
+<pre>curl -fsSL https://raw.githubusercontent.com/chemazener/gpu-prestada/main/web/instalar.sh | sh</pre>
+  <p>Es el mismo instalador de arriba: baja el programa, comprueba su huella, lo instala como servicio de tu usuario y lo deja en marcha. Con el código de alta ya a mano: <code>… | sh -s -- CÓDIGO</code>. En Windows se descarga el instalador desde esta página.</p>
+  <h3>El servidor (el relé para PCs sin Tailscale) · cualquier Linux</h3>
+<pre>curl -fsSL https://raw.githubusercontent.com/chemazener/gpu-prestada/main/relay/instalar-relay.sh \
+  | GPU_RELAY_BROKER=http://IP-DEL-PROXY-OLLAMA:11434 GPU_RELAY_NAME=relay.midominio.com sh</pre>
+  <p>Instala el relé para tu usuario (entorno de Python, certificado propio de 10 años y servicio de systemd) y al terminar enseña la <b>huella</b> del certificado. Solo <code>GPU_RELAY_BROKER</code> es obligatoria; el resto de variables (puertos, direcciones y redes permitidas) están descritas en la cabecera del script.</p>
+  <ul>
+    <li><b>Es el único trozo del servidor que se instala solo.</b> El registro de equipos (<code>server/nodes.py</code>) y los parches se aplican sobre el proxy de Ollama, el vram-broker y el proxy de ComfyUI de este laboratorio, que no están en el repositorio; se despliegan a mano.</li>
+    <li><b>Para usar tu propio relé</b> hay que compilar el agente con su huella (<code>defaultRelayPin</code>) y su dirección (<code>defaultRelay</code>) en <code>agent/tunnel.go</code>. El instalador del cliente de arriba descarga el programa de <i>este</i> servidor de LoMasTrend, no del tuyo.</li>
+    <li><b>El relé escucha solo en el propio equipo</b> (puerto 8445): hay que publicarlo en el 443 con un proxy inverso o una redirección.</li>
+  </ul>
+
   <h2 id="icono">La ventana y el icono</h2>
   <figure>
     <img src="img/ventana.png" alt="Ventana de GPU Prestada con el estado, los pasos de puesta en marcha y los medidores de la tarjeta" width="1500" height="960" loading="lazy">
